@@ -1,4 +1,3 @@
-# backend/models.py
 from pydantic import BaseModel
 from typing import List, Optional
 from enum import Enum
@@ -9,18 +8,18 @@ class TravelMode(str, Enum):
     FLY = "FLY"
 
 class GeoPoint(BaseModel):
+    # we need lat and long for google maps api
     lat: float
     lng: float
     address: Optional[str] = None
 
 class UserProfile(BaseModel):
     user_id: str
-    # This is the KEY variable for your "User History" ranking.
-    # If they choose cheap/slow options -> this number goes DOWN.
-    # If they choose fast/expensive options -> this number goes UP.
+    # rn set as some arbitrary default
+    # this is how we will track user preferences for cost vs time tradeoffs
     dollar_value_per_hour: float = 25.0 
     
-    # Simple car stats
+    # we will get this from an api key, set arbitrarily for now
     car_mpg: float = 25.0
 
 class TripSegment(BaseModel):
@@ -32,19 +31,19 @@ class TripSegment(BaseModel):
     cost_usd: float
     details: str 
     
-    # CRITICAL FOR FLUTTER: The encoded string to draw the line on the map
+    # pretty sure this we need this to display a map route with flutter
     polyline: str 
 
 class TripOption(BaseModel):
     route_id: str
     
-    # These are the two competing factors for your ranking
+    # changed to a basic cost to duration cost exchange
     total_cost: float
     total_duration_minutes: int 
     
     segments: List[TripSegment]
     
-    # The Calculated Score (Lower is better)
+    # score for ranking: higher is better
     ranking_score: float = 0.0
     debug_reason: str = ""
 
