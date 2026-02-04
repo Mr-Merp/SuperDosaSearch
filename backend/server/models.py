@@ -1,3 +1,4 @@
+# backend/models.py
 from pydantic import BaseModel
 from typing import List, Optional
 from enum import Enum
@@ -8,21 +9,19 @@ class TravelMode(str, Enum):
     FLY = "FLY"
 
 class GeoPoint(BaseModel):
-    # we need lat and long for google maps api
     lat: float
     lng: float
     address: Optional[str] = None
 
 class UserProfile(BaseModel):
     user_id: str
-    # will prolly think of a better way to do tweak bias later not really sure how else to do it as of now
-    bias_drive: float = 1.0       # >1.0 = prefers driving
-    bias_fly: float = 1.0         # >1.0 = prefers flying
+    # This is the KEY variable for your "User History" ranking.
+    # If they choose cheap/slow options -> this number goes DOWN.
+    # If they choose fast/expensive options -> this number goes UP.
     dollar_value_per_hour: float = 25.0 
-    max_tolerated_drive_min: int = 360  # 6 hours
     
-    # basically a flag for less driving when it comes to airport + driving stuff
-    minimize_driving_preference: bool = False 
+    # Simple car stats
+    car_mpg: float = 25.0
 
 class TripSegment(BaseModel):
     mode: TravelMode
@@ -32,12 +31,20 @@ class TripSegment(BaseModel):
     distance_miles: float
     cost_usd: float
     details: str 
+    
+    # CRITICAL FOR FLUTTER: The encoded string to draw the line on the map
+    polyline: str 
 
 class TripOption(BaseModel):
     route_id: str
+    
+    # These are the two competing factors for your ranking
     total_cost: float
-    total_duration_minutes: int
+    total_duration_minutes: int 
+    
     segments: List[TripSegment]
+    
+    # The Calculated Score (Lower is better)
     ranking_score: float = 0.0
     debug_reason: str = ""
 
