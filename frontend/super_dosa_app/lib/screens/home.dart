@@ -69,24 +69,37 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 8),
                         DefaultTextStyle(
-                          style: TextStyle(
-                            fontSize:18,
-                            color: Colors.white.withOpacity(0.9),
-                            fontWeight: FontWeight.w300,
-                          ),
-                          child: AnimatedTextKit(
-                            repeatForever: true,
-                            pause: const Duration(milliseconds: 6000),
-                            animatedTexts: [
-                              TypewriterAnimatedText('Find your perfect route.', speed: const Duration (milliseconds: 80),cursor: '|'),
-                              TypewriterAnimatedText('Your journey begins here.', speed: const Duration (milliseconds: 80),cursor: '|'),
-                              TypewriterAnimatedText('Explore more, Stress less.', speed: const Duration (milliseconds: 80),cursor: '|'),
-                              TypewriterAnimatedText('Uncover your next destination.', speed: const Duration (milliseconds: 80),cursor: '|'),
-                              TypewriterAnimatedText('Map your next adventure.', speed: const Duration (milliseconds: 80),cursor: '|'),
-
-                            ],
-                          )
-                        )
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.white.withOpacity(0.9),
+                              fontWeight: FontWeight.w300,
+                            ),
+                            child: AnimatedTextKit(
+                              repeatForever: true,
+                              pause: const Duration(milliseconds: 2500),
+                              animatedTexts: [
+                                TypewriterAnimatedText(
+                                    'Find your perfect route.',
+                                    speed: const Duration(milliseconds: 80),
+                                    cursor: '|'),
+                                TypewriterAnimatedText(
+                                    'Your journey begins here.',
+                                    speed: const Duration(milliseconds: 80),
+                                    cursor: '|'),
+                                TypewriterAnimatedText(
+                                    'Explore more, Stress less.',
+                                    speed: const Duration(milliseconds: 80),
+                                    cursor: '|'),
+                                TypewriterAnimatedText(
+                                    'Uncover your next destination.',
+                                    speed: const Duration(milliseconds: 80),
+                                    cursor: '|'),
+                                TypewriterAnimatedText(
+                                    'Map your next adventure.',
+                                    speed: const Duration(milliseconds: 80),
+                                    cursor: '|'),
+                              ],
+                            ))
                       ],
                     ),
                   ),
@@ -121,11 +134,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(color: Colors.grey[300]!),
+                                      borderSide:
+                                          BorderSide(color: Colors.grey[300]!),
                                     ),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(color: Colors.grey[300]!),
+                                      borderSide:
+                                          BorderSide(color: Colors.grey[300]!),
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
@@ -139,9 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                               ),
-
                               const SizedBox(width: 8),
-
                               Container(
                                 decoration: BoxDecoration(
                                   color: Color(0xFF4A90E2).withOpacity(0.1),
@@ -154,9 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   tooltip: 'Swap locations',
                                 ),
                               ),
-
                               const SizedBox(width: 8),
-
                               Expanded(
                                 child: TextField(
                                   controller: toController,
@@ -173,11 +184,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(color: Colors.grey[300]!),
+                                      borderSide:
+                                          BorderSide(color: Colors.grey[300]!),
                                     ),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(color: Colors.grey[300]!),
+                                      borderSide:
+                                          BorderSide(color: Colors.grey[300]!),
                                     ),
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
@@ -219,11 +232,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey[300]!),
+                                borderSide:
+                                    BorderSide(color: Colors.grey[300]!),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey[300]!),
+                                borderSide:
+                                    BorderSide(color: Colors.grey[300]!),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -252,10 +267,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           Wrap(
                             spacing: 8,
                             children: [
-                              _buildPreferenceChip('Fastest', 'fastest', Icons.speed),
-                              _buildPreferenceChip('Cheapest', 'cheapest', Icons.attach_money),
-                              _buildPreferenceChip('Balanced', 'balanced', Icons.balance),
-                              _buildPreferenceChip('Eco-friendly', 'eco', Icons.eco),
+                              _buildPreferenceChip(
+                                  'Fastest', 'fastest', Icons.speed),
+                              _buildPreferenceChip(
+                                  'Cheapest', 'cheapest', Icons.attach_money),
+                              _buildPreferenceChip(
+                                  'Balanced', 'balanced', Icons.balance),
+                              _buildPreferenceChip(
+                                  'Eco-friendly', 'eco', Icons.eco),
                             ],
                           ),
 
@@ -304,7 +323,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.search, color: Colors.white, size: 24),
+                                  Icon(Icons.search,
+                                      color: Colors.white, size: 24),
                                   SizedBox(width: 8),
                                   Text(
                                     'Search Routes',
@@ -339,7 +359,8 @@ class _HomeScreenState extends State<HomeScreen> {
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: isSelected ? Colors.white : Color(0xFF4A90E2)),
+          Icon(icon,
+              size: 16, color: isSelected ? Colors.white : Color(0xFF4A90E2)),
           const SizedBox(width: 4),
           Text(label),
         ],

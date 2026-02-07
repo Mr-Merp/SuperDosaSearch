@@ -53,3 +53,5 @@ frontend/super_dosa_app/build/
 DerivedData/
 *.xcbuilddata
 *.pcm
+
+.metadata

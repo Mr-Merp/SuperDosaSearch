@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 class ResultsScreen extends StatefulWidget {
   const ResultsScreen({super.key});
@@ -9,6 +11,7 @@ class ResultsScreen extends StatefulWidget {
 
 class _ResultsScreenState extends State<ResultsScreen> {
   String sortBy = 'recommended'; 
+  final MapController _mapController = MapController();
 
   @override
   Widget build(BuildContext context) {
@@ -164,72 +167,170 @@ class _ResultsScreenState extends State<ResultsScreen> {
               // Results Title
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Recommended Routes',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: const Text(
+                        'Recommended Routes',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 3,
+                      child: Padding(
+                        padding: const EdgeInsets.only(left:3),
+                        child: const Text(
+                          'Your Journey',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          )
+                        )
+                      )
+                    )
+                  ],
                 ),
               ),
 
               const SizedBox(height: 16),
-
-              // Route Cards List
+              // Row with Routes on left and Map on right
               Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  children: const [
-                    ModernRouteCard(
-                      badge: 'Best Overall',
-                      badgeColor: Colors.green,
-                      title: 'Best Balance',
-                      routeDetails: 'Train → Flight',
-                      price: 180,
-                      time: '4h 45m',
-                      transfers: 1,
-                      emissions: 'Low',
-                      isRecommended: true,
+              child: Row(
+                children: [
+
+                  // Left: Recommended routes
+                  Expanded(
+                    flex: 2,
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 15),
+                      children: const [
+                        ModernRouteCard(
+                          badge: 'Best Overall',
+                          badgeColor: Colors.green,
+                          title: 'Best Balance',
+                          routeDetails: 'Train → Flight',
+                          price: 180,
+                          time: '4h 45m',
+                          transfers: 1,
+                          emissions: 'Low',
+                          isRecommended: true,
+                        ),
+                        ModernRouteCard(
+                          badge: 'Fastest',
+                          badgeColor: Colors.orange,
+                          title: 'Fastest Route',
+                          routeDetails: 'Direct Flight',
+                          price: 280,
+                          time: '2h 10m',
+                          transfers: 0,
+                          emissions: 'Medium',
+                          isRecommended: false,
+                        ),
+                        ModernRouteCard(
+                          badge: 'Cheapest',
+                          badgeColor: Colors.blue,
+                          title: 'Cheapest Route',
+                          routeDetails: 'Bus → Flight → Train',
+                          price: 120,
+                          time: '7h 30m',
+                          transfers: 2,
+                          emissions: 'Low',
+                          isRecommended: false,
+                        ),
+                        ModernRouteCard(
+                          badge: 'Eco-friendly',
+                          badgeColor: Colors.green,
+                          title: 'Eco-friendly Route',
+                          routeDetails: 'Train → Bus',
+                          price: 95,
+                          time: '8h 15m',
+                          transfers: 1,
+                          emissions: 'Very Low',
+                          isRecommended: false,
+                        ),
+                      ],
                     ),
-                    ModernRouteCard(
-                      badge: 'Fastest',
-                      badgeColor: Colors.orange,
-                      title: 'Fastest Route',
-                      routeDetails: 'Direct Flight',
-                      price: 280,
-                      time: '2h 10m',
-                      transfers: 0,
-                      emissions: 'Medium',
-                      isRecommended: false,
+                  ),
+
+                  const SizedBox(width: 16), // space between routes and map
+
+                  // Right: Map
+                  Expanded(
+                    flex: 3,
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 16, right: 30),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                        border: Border.all(color: Colors.grey[300]!),
+                      ),
+                      clipBehavior: Clip.hardEdge,
+                      child: Stack( 
+                        children: [
+                          FlutterMap(
+                            mapController: _mapController, 
+                            options: MapOptions(
+                              initialCenter: LatLng(37.7749, -122.4194),
+                              initialZoom: 5,
+                            ),
+                            children: [
+                              TileLayer(
+                                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                userAgentPackageName: 'com.example.findosa',
+                              ),
+                              MarkerLayer(
+                                markers: [
+                                  Marker(
+                                    point: LatLng(37.7749, -122.4194),
+                                    width: 40,
+                                    height: 40,
+                                    child: const Icon(Icons.location_on, color: Colors.red, size: 40),
+                                  ),
+                                  Marker(
+                                    point: LatLng(33.6846, -117.8265),
+                                    width: 40,
+                                    height: 40,
+                                    child: const Icon(Icons.location_on, color: Colors.blue, size: 40),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          Positioned(
+                            right: 12,
+                            bottom: 12,
+                            child: Column(
+                              children: [
+                                _buildZoomButton(Icons.add, () {
+                                  _mapController.move(_mapController.camera.center, _mapController.camera.zoom + 1);
+                                }),
+                                const SizedBox(height: 8),
+                                _buildZoomButton(Icons.remove, () {
+                                  _mapController.move(_mapController.camera.center, _mapController.camera.zoom - 1);
+                                }),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    ModernRouteCard(
-                      badge: 'Cheapest',
-                      badgeColor: Colors.blue,
-                      title: 'Cheapest Route',
-                      routeDetails: 'Bus → Flight → Train',
-                      price: 120,
-                      time: '7h 30m',
-                      transfers: 2,
-                      emissions: 'Low',
-                      isRecommended: false,
-                    ),
-                    ModernRouteCard(
-                      badge: 'Eco-friendly',
-                      badgeColor: Colors.green,
-                      title: 'Eco-friendly Route',
-                      routeDetails: 'Train → Bus',
-                      price: 95,
-                      time: '8h 15m',
-                      transfers: 1,
-                      emissions: 'Very Low',
-                      isRecommended: false,
-                    ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
               ),
             ],
           ),
@@ -304,6 +405,21 @@ class _ResultsScreenState extends State<ResultsScreen> {
         return 'Balanced';
     }
   }
+
+  Widget _buildZoomButton(IconData icon, VoidCallback onPressed) {
+      return SizedBox(
+        height: 40,
+        width: 40,
+        child: FloatingActionButton(
+          heroTag: null, 
+          onPressed: onPressed,
+          backgroundColor: Colors.white.withOpacity(0.9),
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          child: Icon(icon, color: const Color(0xFF4A90E2), size: 20),
+        ),
+      );
+    }
 }
 
 // Modern Route Card Widget
