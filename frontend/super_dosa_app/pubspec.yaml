@@ -1,17 +1,18 @@
 name: super_dosa_search
 description: Findosa - A Flutter app for planning trips with optimal cost vs speed preferences.
 
-publish_to: 'none'
+publish_to: "none"
 
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
   http: ^1.1.0
+  animated_text_kit: ^4.2.2
 
 dev_dependencies:
   flutter_test:
