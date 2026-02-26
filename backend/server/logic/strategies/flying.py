@@ -17,7 +17,6 @@ class FlyingStrategy(TravelStrategy):
             for end_apt in dests:
                 
                 flight = PricingService.get_flight_data(start_apt["code"], end_apt["code"])
-                rental_cost = PricingService.get_rental_car_price(end_apt["code"])
                 
                 drive_to_apt = GoogleMapsService.get_drive_route(
                     req.origin, GeoPoint(lat=start_apt['lat'], lng=start_apt['lng'])
@@ -60,7 +59,7 @@ class FlyingStrategy(TravelStrategy):
                     end_point=req.destination,
                     duration_minutes=drive_to_dest["duration_minutes"],
                     distance_miles=drive_to_dest["distance_miles"],
-                    cost_usd=rental_cost,
+                    cost_usd=(drive_to_dest["distance_miles"] / req.user_profile.car_mpg) * 3.50,
                     details=f"Rental to Destination",
                     polyline=drive_to_dest["polyline"]
                 )
