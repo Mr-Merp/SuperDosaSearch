@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:animated_text_kit/animated_text_kit.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -54,24 +55,55 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 40),
-                  const Text(
-                    'Findosa',
-                    style: TextStyle(
-                      fontSize: 42,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: -1,
+                  Center(
+                    child: Column(
+                      children: [
+                        const Text(
+                          'Findosa',
+                          style: TextStyle(
+                            fontSize: 42,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: -1,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        DefaultTextStyle(
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.white.withOpacity(0.9),
+                              fontWeight: FontWeight.w300,
+                            ),
+                            child: AnimatedTextKit(
+                              repeatForever: true,
+                              pause: const Duration(milliseconds: 2500),
+                              animatedTexts: [
+                                TypewriterAnimatedText(
+                                    'Find your perfect route.',
+                                    speed: const Duration(milliseconds: 80),
+                                    cursor: '|'),
+                                TypewriterAnimatedText(
+                                    'Your journey begins here.',
+                                    speed: const Duration(milliseconds: 80),
+                                    cursor: '|'),
+                                TypewriterAnimatedText(
+                                    'Explore more, Stress less.',
+                                    speed: const Duration(milliseconds: 80),
+                                    cursor: '|'),
+                                TypewriterAnimatedText(
+                                    'Uncover your next destination.',
+                                    speed: const Duration(milliseconds: 80),
+                                    cursor: '|'),
+                                TypewriterAnimatedText(
+                                    'Map your next adventure.',
+                                    speed: const Duration(milliseconds: 80),
+                                    cursor: '|'),
+                              ],
+                            ))
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Find your perfect route',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.white.withOpacity(0.9),
-                      fontWeight: FontWeight.w300,
-                    ),
-                  ),
+                  const SizedBox(height: 40),
                   const SizedBox(height: 40),
 
                   // Search Card
@@ -84,95 +116,95 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.all(24),
                       child: Column(
                         children: [
-                          // From Field
-                          TextField(
-                            controller: fromController,
-                            style: const TextStyle(fontSize: 16),
-                            decoration: InputDecoration(
-                              labelText: 'From',
-                              labelStyle: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 16,
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: fromController,
+                                  style: const TextStyle(fontSize: 16),
+                                  decoration: InputDecoration(
+                                    labelText: 'From',
+                                    labelStyle: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 16,
+                                    ),
+                                    prefixIcon: Icon(
+                                      Icons.location_on,
+                                      color: Color(0xFF4A90E2),
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide:
+                                          BorderSide(color: Colors.grey[300]!),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide:
+                                          BorderSide(color: Colors.grey[300]!),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: Color(0xFF4A90E2),
+                                        width: 2,
+                                      ),
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.grey[50],
+                                  ),
+                                ),
                               ),
-                              prefixIcon: Icon(
-                                Icons.location_on,
-                                color: Color(0xFF4A90E2),
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey[300]!),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey[300]!),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
+                              const SizedBox(width: 8),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Color(0xFF4A90E2).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: IconButton(
+                                  icon: const Icon(Icons.swap_horiz),
                                   color: Color(0xFF4A90E2),
-                                  width: 2,
+                                  onPressed: _swapLocations,
+                                  tooltip: 'Swap locations',
                                 ),
                               ),
-                              filled: true,
-                              fillColor: Colors.grey[50],
-                            ),
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // Swap Button
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Color(0xFF4A90E2).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: IconButton(
-                                icon: Icon(
-                                  Icons.swap_vert,
-                                  color: Color(0xFF4A90E2),
-                                ),
-                                onPressed: _swapLocations,
-                                tooltip: 'Swap locations',
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 8),
-
-                          // To Field
-                          TextField(
-                            controller: toController,
-                            style: const TextStyle(fontSize: 16),
-                            decoration: InputDecoration(
-                              labelText: 'To',
-                              labelStyle: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 16,
-                              ),
-                              prefixIcon: Icon(
-                                Icons.location_on,
-                                color: Color(0xFF7B68EE),
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey[300]!),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey[300]!),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: Color(0xFF7B68EE),
-                                  width: 2,
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: TextField(
+                                  controller: toController,
+                                  style: const TextStyle(fontSize: 16),
+                                  decoration: InputDecoration(
+                                    labelText: 'To',
+                                    labelStyle: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 16,
+                                    ),
+                                    prefixIcon: Icon(
+                                      Icons.location_on,
+                                      color: Color(0xFF7B68EE),
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide:
+                                          BorderSide(color: Colors.grey[300]!),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide:
+                                          BorderSide(color: Colors.grey[300]!),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: Color(0xFF7B68EE),
+                                        width: 2,
+                                      ),
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.grey[50],
+                                  ),
                                 ),
                               ),
-                              filled: true,
-                              fillColor: Colors.grey[50],
-                            ),
+                            ],
                           ),
 
                           const SizedBox(height: 20),
@@ -200,11 +232,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey[300]!),
+                                borderSide:
+                                    BorderSide(color: Colors.grey[300]!),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey[300]!),
+                                borderSide:
+                                    BorderSide(color: Colors.grey[300]!),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -233,10 +267,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           Wrap(
                             spacing: 8,
                             children: [
-                              _buildPreferenceChip('Fastest', 'fastest', Icons.speed),
-                              _buildPreferenceChip('Cheapest', 'cheapest', Icons.attach_money),
-                              _buildPreferenceChip('Balanced', 'balanced', Icons.balance),
-                              _buildPreferenceChip('Eco-friendly', 'eco', Icons.eco),
+                              _buildPreferenceChip(
+                                  'Fastest', 'fastest', Icons.speed),
+                              _buildPreferenceChip(
+                                  'Cheapest', 'cheapest', Icons.attach_money),
+                              _buildPreferenceChip(
+                                  'Balanced', 'balanced', Icons.balance),
+                              _buildPreferenceChip(
+                                  'Eco-friendly', 'eco', Icons.eco),
                             ],
                           ),
 
@@ -285,7 +323,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.search, color: Colors.white, size: 24),
+                                  Icon(Icons.search,
+                                      color: Colors.white, size: 24),
                                   SizedBox(width: 8),
                                   Text(
                                     'Search Routes',
@@ -320,7 +359,8 @@ class _HomeScreenState extends State<HomeScreen> {
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: isSelected ? Colors.white : Color(0xFF4A90E2)),
+          Icon(icon,
+              size: 16, color: isSelected ? Colors.white : Color(0xFF4A90E2)),
           const SizedBox(width: 4),
           Text(label),
         ],
