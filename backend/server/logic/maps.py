@@ -42,7 +42,7 @@ class GoogleMapsService:
             leg = route["legs"][0]
             routes.append({
                 "distance_miles": leg["distance"]["value"] / 1609.34,
-                "duration_minutes": leg["duration"]["value"] / 60,
+                "duration_minutes": int(leg["duration"]["value"] / 60),
                 "polyline": route["overview_polyline"]["points"],
             })
         return routes

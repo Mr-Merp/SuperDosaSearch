@@ -16,11 +16,15 @@ class FlyingStrategy(TravelStrategy):
         for start_apt in origins:
             for end_apt in dests:
                 
-                flight = PricingService.get_flight_data(start_apt["code"], end_apt["code"])
+                start_code = start_apt.get("code") or start_apt.get("iata_code")
+                end_code = end_apt.get("code") or end_apt.get("iata_code")
+                if not start_code or not end_code:
+                    continue
+                flight = PricingService.get_flight_data(start_code, end_code)
                 
-                drive_to_apt = GoogleMapsService.get_drive_route(
+                drive_to_apt = GoogleMapsService.get_drive_routes(
                     req.origin, GeoPoint(lat=start_apt['lat'], lng=start_apt['lng'])
-                )
+                )[0]
                 
                 # driving to airport
                 seg_1 = TripSegment(
@@ -30,7 +34,7 @@ class FlyingStrategy(TravelStrategy):
                     duration_minutes=drive_to_apt["duration_minutes"],
                     distance_miles=drive_to_apt["distance_miles"],
                     cost_usd=(drive_to_apt["distance_miles"] / req.user_profile.car_mpg) * 3.50,
-                    details=f"Drive to {start_apt['code']}",
+                    details=f"Drive to {start_code}",
                     polyline=drive_to_apt["polyline"]
                 )
 
@@ -44,14 +48,14 @@ class FlyingStrategy(TravelStrategy):
                     duration_minutes=flight["duration_minutes"] + flight_buffer,
                     distance_miles=0, # distance doesn't matter for user effort
                     cost_usd=flight["price"],
-                    details=f"Flight {start_apt['code']} -> {end_apt['code']}",
+                    details=f"Flight {start_code} -> {end_code}",
                     polyline="" # no need for flight polyline
                 )
                 
                 # back to driving
-                drive_to_dest = GoogleMapsService.get_drive_route(
+                drive_to_dest = GoogleMapsService.get_drive_routes(
                     GeoPoint(lat=end_apt['lat'], lng=end_apt['lng']), req.destination
-                )
+                )[0]
                 
                 seg_3 = TripSegment(
                     mode=TravelMode.DRIVE,
@@ -72,7 +76,7 @@ class FlyingStrategy(TravelStrategy):
                     total_cost=round(total_cost, 2),
                     total_duration_minutes=int(total_time),
                     segments=[seg_1, seg_2, seg_3],
-                    debug_reason=f"Fly via {start_apt['code']}"
+                    debug_reason=f"Fly via {start_code}"
                 ))
                 
         return options
