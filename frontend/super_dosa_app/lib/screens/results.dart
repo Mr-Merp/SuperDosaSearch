@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import '../services/api_service.dart';
 
 class ResultsScreen extends StatefulWidget {
   const ResultsScreen({super.key});
@@ -12,6 +13,86 @@ class ResultsScreen extends StatefulWidget {
 class _ResultsScreenState extends State<ResultsScreen> {
   String sortBy = 'recommended'; 
   final MapController _mapController = MapController();
+  LatLng? _originPoint;
+  LatLng? _destPoint;
+  bool _markersLoaded = false;
+  String? _markerError;
+  String? _markerInfo;
+  String _markerStatus = 'idle';
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_markersLoaded) {
+      _markersLoaded = true;
+      _loadMarkers();
+    }
+  }
+
+  Future<void> _loadMarkers() async {
+    try {
+      setState(() {
+        _markerStatus = 'loading';
+        _markerError = null;
+        _markerInfo = null;
+      });
+      final data =
+          ModalRoute.of(context)!.settings.arguments as Map<String, String>;
+      final from = (data['from'] ?? '').trim();
+      final to = (data['to'] ?? '').trim();
+      if (from.isEmpty || to.isEmpty) {
+        setState(() {
+          _markerStatus = 'missing inputs';
+        });
+        return;
+      }
+      final routes = await ApiService.searchRoutes(from: from, to: to);
+      if (routes.isEmpty) {
+        setState(() {
+          _markerStatus = 'no routes';
+        });
+        return;
+      }
+      final first = routes.first as Map<String, dynamic>;
+      final segments = (first['segments'] ?? []) as List<dynamic>;
+      if (segments.isEmpty) {
+        setState(() {
+          _markerStatus = 'no segments';
+        });
+        return;
+      }
+      final start = segments.first['start_point'];
+      final end = segments.last['end_point'];
+      if (start == null || end == null) {
+        setState(() {
+          _markerStatus = 'missing points';
+        });
+        return;
+      }
+      final origin = LatLng(
+        (start['lat'] as num).toDouble(),
+        (start['lng'] as num).toDouble(),
+      );
+      final dest = LatLng(
+        (end['lat'] as num).toDouble(),
+        (end['lng'] as num).toDouble(),
+      );
+      if (!mounted) return;
+      setState(() {
+        _originPoint = origin;
+        _destPoint = dest;
+        _markerStatus = 'loaded';
+        _markerInfo =
+            'Markers: (${origin.latitude.toStringAsFixed(4)}, ${origin.longitude.toStringAsFixed(4)}) → (${dest.latitude.toStringAsFixed(4)}, ${dest.longitude.toStringAsFixed(4)})';
+      });
+      _mapController.move(origin, _mapController.camera.zoom);
+    } catch (e) {
+      setState(() {
+        _markerError = e.toString();
+        _markerStatus = 'error';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -284,7 +365,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           FlutterMap(
                             mapController: _mapController, 
                             options: MapOptions(
-                              initialCenter: LatLng(37.7749, -122.4194),
+                              initialCenter: _originPoint ?? LatLng(37.7749, -122.4194),
                               initialZoom: 5,
                             ),
                             children: [
@@ -292,23 +373,55 @@ class _ResultsScreenState extends State<ResultsScreen> {
                                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                                 userAgentPackageName: 'com.example.findosa',
                               ),
-                              MarkerLayer(
-                                markers: [
-                                  Marker(
-                                    point: LatLng(37.7749, -122.4194),
-                                    width: 40,
-                                    height: 40,
-                                    child: const Icon(Icons.location_on, color: Colors.red, size: 40),
-                                  ),
-                                  Marker(
-                                    point: LatLng(33.6846, -117.8265),
-                                    width: 40,
-                                    height: 40,
-                                    child: const Icon(Icons.location_on, color: Colors.blue, size: 40),
-                                  ),
-                                ],
-                              ),
+                              if (_originPoint != null && _destPoint != null)
+                                MarkerLayer(
+                                  markers: [
+                                    Marker(
+                                      point: _originPoint!,
+                                      width: 40,
+                                      height: 40,
+                                      child: const Icon(Icons.location_on, color: Colors.red, size: 40),
+                                    ),
+                                    Marker(
+                                      point: _destPoint!,
+                                      width: 40,
+                                      height: 40,
+                                      child: const Icon(Icons.location_on, color: Colors.blue, size: 40),
+                                    ),
+                                  ],
+                                ),
                             ],
+                          ),
+                          if (_markerError != null)
+                            Positioned(
+                              left: 12,
+                              bottom: 12,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.9),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'Map markers unavailable: $_markerError',
+                                  style: TextStyle(color: Colors.red[700], fontSize: 12),
+                                ),
+                              ),
+                            ),
+                          Positioned(
+                            left: 12,
+                            top: 12,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.9),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'Marker status: $_markerStatus',
+                                style: const TextStyle(color: Colors.black87, fontSize: 12),
+                              ),
+                            ),
                           ),
                           Positioned(
                             right: 12,

@@ -4,6 +4,8 @@
 *.pyc
 *.swp
 *.env
+.venv/
+.venv*/
 .DS_Store
 .atom/
 .build/
