@@ -19,8 +19,14 @@ class GoogleMapsService:
         if data["status"] != "OK":
             raise ValueError(f"Geocoding API error: {data['status']}")
 
-        location = data["results"][0]["geometry"]["location"]
-        return GeoPoint(lat=location["lat"], lng=location["lng"], address=address)
+        result = data["results"][0]
+        location = result["geometry"]["location"]
+        state = None
+        for comp in result.get("address_components", []):
+            if "administrative_area_level_1" in comp.get("types", []):
+                state = comp.get("short_name")
+                break
+        return GeoPoint(lat=location["lat"], lng=location["lng"], address=address, state=state)
 
     @staticmethod
     def get_drive_routes(origin: GeoPoint, dest: GeoPoint):

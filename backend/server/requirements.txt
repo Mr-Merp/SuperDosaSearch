@@ -1,0 +1,4 @@
+pymongo
+oilpriceapi
+requests
+python-dotenv

@@ -27,13 +27,14 @@ class FlyingStrategy(TravelStrategy):
                 )[0]
                 
                 # driving to airport
+                origin_gas = PricingService.get_gas_price_for_state(req.origin.state)
                 seg_1 = TripSegment(
                     mode=TravelMode.DRIVE,
                     start_point=req.origin,
                     end_point=GeoPoint(lat=start_apt['lat'], lng=start_apt['lng']),
                     duration_minutes=drive_to_apt["duration_minutes"],
                     distance_miles=drive_to_apt["distance_miles"],
-                    cost_usd=(drive_to_apt["distance_miles"] / req.user_profile.car_mpg) * 3.50,
+                    cost_usd=(drive_to_apt["distance_miles"] / req.user_profile.car_mpg) * origin_gas,
                     details=f"Drive to {start_code}",
                     polyline=drive_to_apt["polyline"]
                 )
@@ -57,13 +58,14 @@ class FlyingStrategy(TravelStrategy):
                     GeoPoint(lat=end_apt['lat'], lng=end_apt['lng']), req.destination
                 )[0]
                 
+                dest_gas = PricingService.get_gas_price_for_state(req.destination.state)
                 seg_3 = TripSegment(
                     mode=TravelMode.DRIVE,
                     start_point=GeoPoint(lat=end_apt['lat'], lng=end_apt['lng']),
                     end_point=req.destination,
                     duration_minutes=drive_to_dest["duration_minutes"],
                     distance_miles=drive_to_dest["distance_miles"],
-                    cost_usd=(drive_to_dest["distance_miles"] / req.user_profile.car_mpg) * 3.50,
+                    cost_usd=(drive_to_dest["distance_miles"] / req.user_profile.car_mpg) * dest_gas,
                     details=f"Rental to Destination",
                     polyline=drive_to_dest["polyline"]
                 )

@@ -6,16 +6,42 @@ from models import GeoPoint
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
 
+try:
+    from oilpriceapi import OilPriceAPI
+except Exception:
+    OilPriceAPI = None
+
 _client = MongoClient("mongodb://localhost:27017")
 _airports = _client["cs125"]["airports"]
 
 NEARBY_AIRPORT_RADIUS_METERS = 64374  # 40 miles
+_STATE_FUEL_CACHE = {}
 
 class PricingService:
     @staticmethod
-    def get_gas_price_along_route(polyline: str):
-        # TODO: H3 Spatial Index Query
-        return 3.50
+    def get_gas_price_along_route(polyline: str, state_code: str | None = None):
+        # Use state average fuel price as a simple proxy.
+        return PricingService.get_gas_price_for_state(state_code)
+
+    @staticmethod
+    def get_gas_price_for_state(state_code: str | None):
+        if not state_code:
+            return 3.50
+        key = state_code.upper()
+        if key in _STATE_FUEL_CACHE:
+            return _STATE_FUEL_CACHE[key]
+        api_key = os.getenv("OILPRICE_API_KEY")
+        if not api_key or OilPriceAPI is None:
+            return 3.50
+        try:
+            client = OilPriceAPI(api_key)
+            # OilPriceAPI free tier provides diesel state averages; use as proxy.
+            data = client.diesel_prices.get_regional(state=key)
+            price = float(data.get("price", 3.50))
+            _STATE_FUEL_CACHE[key] = price
+            return price
+        except Exception:
+            return 3.50
 
     @staticmethod
     def find_nearby_airports(location: GeoPoint, radius_meters: int = NEARBY_AIRPORT_RADIUS_METERS):

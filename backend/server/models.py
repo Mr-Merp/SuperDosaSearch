@@ -12,6 +12,7 @@ class GeoPoint(BaseModel):
     lat: float
     lng: float
     address: Optional[str] = None
+    state: Optional[str] = None
 
 class UserProfile(BaseModel):
     user_id: str

@@ -24,7 +24,6 @@ class SearchRequest(BaseModel):
 
 @app.post("/routes/search", response_model=List[TripOption])
 async def search_routes(request: SearchRequest):
-    print(f"/routes/search from={request.from_address} to={request.to_address}")
     origin = GoogleMapsService.geocode_address(request.from_address)
     destination = GoogleMapsService.geocode_address(request.to_address)
 

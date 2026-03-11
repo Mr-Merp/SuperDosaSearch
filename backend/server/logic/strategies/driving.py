@@ -12,7 +12,10 @@ class DrivingStrategy(TravelStrategy):
 
         options = []
         for route_data in routes:
-            gas_price = PricingService.get_gas_price_along_route(route_data["polyline"])
+            gas_price = PricingService.get_gas_price_along_route(
+                route_data["polyline"],
+                state_code=req.origin.state,
+            )
             gallons = route_data["distance_miles"] / req.user_profile.car_mpg
             fuel_cost = gallons * gas_price
 
