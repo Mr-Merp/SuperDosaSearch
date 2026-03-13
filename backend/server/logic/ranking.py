@@ -6,28 +6,35 @@ class RankingEngine:
         self.profile = profile
 
     def calculate_score(self, option: TripOption) -> float:
-        """
-        Calculates the 'Total Economic Cost' of the trip.
-        Score = Cash Cost + (Time * User's Hourly Value)
-        
-        Example: 
-        Option A: $100 ticket, 10 hours travel. User Value $10/hr.
-        Score = 100 + (10 * 10) = 200.
-        """
-        
         financial_cost = option.total_cost
-        
         hours = option.total_duration_minutes / 60.0
         time_cost = hours * self.profile.dollar_value_per_hour
-        
         final_score = financial_cost + time_cost
         return round(final_score, 2)
 
     def rank(self, options: List[TripOption]) -> List[TripOption]:
+        preference = (self.profile.preference or "").lower()
+
+        if preference == "cheapest":
+            for opt in options:
+                opt.ranking_score = opt.total_cost
+                opt.debug_reason = "Cheapest"
+            return sorted(options, key=lambda x: x.total_cost)
+
+        if preference == "fastest":
+            for opt in options:
+                opt.ranking_score = float(opt.total_duration_minutes)
+                opt.debug_reason = "Fastest"
+            return sorted(options, key=lambda x: x.total_duration_minutes)
+
+        if preference == "eco":
+            for opt in options:
+                opt.ranking_score = opt.total_emissions_kg
+                opt.debug_reason = "Eco-friendly"
+            return sorted(options, key=lambda x: x.total_emissions_kg)
+
         for opt in options:
             opt.ranking_score = self.calculate_score(opt)
-            
-            # idk im tired adding random debug stuff
             hours = opt.total_duration_minutes / 60
             if opt.ranking_score < 200: 
                 opt.debug_reason = "Best Value"

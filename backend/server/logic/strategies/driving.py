@@ -8,7 +8,7 @@ from logic.pricing import PricingService
 class DrivingStrategy(TravelStrategy):
     
     async def generate_options(self, req: RouteRequest) -> List[TripOption]:
-        routes = GoogleMapsService.get_drive_routes(req.origin, req.destination)
+        routes = await GoogleMapsService.get_drive_routes(req.origin, req.destination)
 
         options = []
         for route_data in routes:
@@ -18,6 +18,7 @@ class DrivingStrategy(TravelStrategy):
             )
             gallons = route_data["distance_miles"] / req.user_profile.car_mpg
             fuel_cost = gallons * gas_price
+            emissions_kg = PricingService.get_drive_emissions_kg(gallons)
 
             segment = TripSegment(
                 mode=TravelMode.DRIVE,
@@ -34,6 +35,7 @@ class DrivingStrategy(TravelStrategy):
                 route_id=str(uuid.uuid4()),
                 total_cost=segment.cost_usd,
                 total_duration_minutes=segment.duration_minutes,
+                total_emissions_kg=round(emissions_kg, 1),
                 segments=[segment],
                 debug_reason="Standard Drive"
             ))

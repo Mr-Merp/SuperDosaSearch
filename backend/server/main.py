@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv("config.env")
 
+import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -18,19 +19,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 class SearchRequest(BaseModel):
     from_address: str
     to_address: str
+    budget: float | None = None
+    preference: str | None = None
 
 @app.post("/routes/search", response_model=List[TripOption])
 async def search_routes(request: SearchRequest):
-    origin = GoogleMapsService.geocode_address(request.from_address)
-    destination = GoogleMapsService.geocode_address(request.to_address)
+    origin, destination = await asyncio.gather(
+        GoogleMapsService.geocode_address(request.from_address),
+        GoogleMapsService.geocode_address(request.to_address),
+    )
 
     route_request = RouteRequest(
         origin=origin,
         destination=destination,
-        user_profile=UserProfile(user_id="default"),
+        user_profile=UserProfile(
+            user_id="default",
+            budget_usd=request.budget,
+            preference=request.preference,
+        ),
     )
 
     orchestrator = RouteOrchestrator()

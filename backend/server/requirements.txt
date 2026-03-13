@@ -1,4 +1,7 @@
-pymongo
-oilpriceapi
-requests
+fastapi
+uvicorn[standard]
+pydantic
 python-dotenv
+pymongo
+httpx
+oilpriceapi
