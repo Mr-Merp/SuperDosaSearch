@@ -69,8 +69,12 @@ class PricingService:
                     "_dist": dist,
                 })
         results.sort(key=lambda x: x["_dist"])
+        large = [r for r in results if r.get("type") == "large_airport"]
+        medium = [r for r in results if r.get("type") == "medium_airport"]
+        ordered = large + medium
+
         out = []
-        for r in results:
+        for r in ordered:
             if len(out) >= limit:
                 break
             if r.get("iata_code"):
