@@ -3,19 +3,16 @@ import math
 import os
 
 from models import GeoPoint
-from pymongo import MongoClient
-from pymongo.errors import PyMongoError
 
 try:
     from oilpriceapi import OilPriceAPI
 except Exception:
     OilPriceAPI = None
 
-_client = MongoClient("mongodb://localhost:27017")
-_airports = _client["cs125"]["airports"]
-
-NEARBY_AIRPORT_RADIUS_METERS = 64374  # 40 miles
+NEARBY_AIRPORT_RADIUS_METERS = 64374
 _STATE_FUEL_CACHE = {}
+_KG_CO2_PER_GALLON_GASOLINE = 8.89
+_KG_CO2_PER_FLIGHT_MILE = 0.2
 
 class PricingService:
     @staticmethod
@@ -44,58 +41,51 @@ class PricingService:
             return 3.50
 
     @staticmethod
-    def find_nearby_airports(location: GeoPoint, radius_meters: int = NEARBY_AIRPORT_RADIUS_METERS):
-        try:
-            cursor = _airports.find({
-                "geometry": {
-                    "$nearSphere": {
-                        "$geometry": {
-                            "type": "Point",
-                            "coordinates": [location.lng, location.lat]
-                        },
-                        "$maxDistance": radius_meters
-                    }
-                }
-            })
-            return [
-                {
-                    "iata_code": doc["properties"].get("iata_code"),
-                    "icao_code": doc["properties"].get("icao_code"),
-                    "name": doc["properties"].get("name"),
-                    "lat": doc["geometry"]["coordinates"][1],
-                    "lng": doc["geometry"]["coordinates"][0],
-                }
-                for doc in cursor
-            ]
-        except PyMongoError:
-            # Fallback to local GeoJSON when MongoDB isn't available.
-            path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "airports.geojson"))
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            features = data.get("features", [])
-            results = []
-            # Convert radius meters -> miles for haversine comparison
-            radius_miles = radius_meters / 1609.34
-            for feat in features:
-                coords = (feat.get("geometry") or {}).get("coordinates") or []
-                if len(coords) != 2:
-                    continue
-                lon, lat = coords
-                if _haversine_miles(location.lat, location.lng, lat, lon) <= radius_miles:
-                    props = feat.get("properties") or {}
-                    results.append({
-                        "iata_code": props.get("iata_code"),
-                        "icao_code": props.get("icao_code"),
-                        "name": props.get("name"),
-                        "lat": lat,
-                        "lng": lon,
-                    })
-            return results
+    def find_nearby_airports(location: GeoPoint, radius_meters: int = NEARBY_AIRPORT_RADIUS_METERS, limit: int = 5):
+        path = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "airports.geojson"))
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        features = data.get("features", [])
+        results = []
+        radius_miles = radius_meters / 1609.34
+        for feat in features:
+            coords = (feat.get("geometry") or {}).get("coordinates") or []
+            if len(coords) != 2:
+                continue
+            lon, lat = coords
+            dist = _haversine_miles(location.lat, location.lng, lat, lon)
+            if dist <= radius_miles:
+                props = feat.get("properties") or {}
+                results.append({
+                    "iata_code": props.get("iata_code"),
+                    "icao_code": props.get("icao_code"),
+                    "name": props.get("name"),
+                    "lat": lat,
+                    "lng": lon,
+                    "_dist": dist,
+                })
+        results.sort(key=lambda x: x["_dist"])
+        out = []
+        for r in results:
+            if len(out) >= limit:
+                break
+            if r.get("iata_code"):
+                out.append({k: v for k, v in r.items() if k != "_dist"})
+        return out
 
     @staticmethod
     def get_flight_data(origin, dest):
         # MOCK: In prod, call Skyscanner/Amadeus
         return {"price": 250.0, "duration_minutes": 300}
+
+    @staticmethod
+    def get_drive_emissions_kg(gallons: float) -> float:
+        return gallons * _KG_CO2_PER_GALLON_GASOLINE
+
+    @staticmethod
+    def get_flight_emissions_kg(origin: GeoPoint, dest: GeoPoint) -> float:
+        miles = _haversine_miles(origin.lat, origin.lng, dest.lat, dest.lng)
+        return miles * _KG_CO2_PER_FLIGHT_MILE
 
 
 def _haversine_miles(lat1, lon1, lat2, lon2):

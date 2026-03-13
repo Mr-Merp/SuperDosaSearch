@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+
+import '../models/route_models.dart';
 import '../services/api_service.dart';
+import '../services/api_config.dart';
+import '../utils/polyline_utils.dart';
 
 class ResultsScreen extends StatefulWidget {
   const ResultsScreen({super.key});
@@ -11,93 +15,146 @@ class ResultsScreen extends StatefulWidget {
 }
 
 class _ResultsScreenState extends State<ResultsScreen> {
-  String sortBy = 'recommended'; 
+  String sortBy = 'recommended';
   final MapController _mapController = MapController();
-  LatLng? _originPoint;
-  LatLng? _destPoint;
-  bool _markersLoaded = false;
-  String? _markerError;
-  String? _markerInfo;
-  String _markerStatus = 'idle';
+
+  List<TripOption>? _routes;
+  bool _loading = true;
+  String? _error;
+  int _selectedRouteIndex = 0;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_markersLoaded) {
-      _markersLoaded = true;
-      _loadMarkers();
-    }
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadRoutes());
   }
 
-  Future<void> _loadMarkers() async {
-    try {
+  Future<void> _loadRoutes() async {
+    final data = ModalRoute.of(context)?.settings.arguments as Map<String, String>?;
+    if (data == null) {
       setState(() {
-        _markerStatus = 'loading';
-        _markerError = null;
-        _markerInfo = null;
+        _loading = false;
+        _error = 'Missing search parameters';
       });
-      final data =
-          ModalRoute.of(context)!.settings.arguments as Map<String, String>;
-      final from = (data['from'] ?? '').trim();
-      final to = (data['to'] ?? '').trim();
-      if (from.isEmpty || to.isEmpty) {
+      return;
+    }
+    final from = data['from'] ?? '';
+    final to = data['to'] ?? '';
+    final budgetStr = data['budget'];
+    final preference = data['preference'];
+    final budget = budgetStr != null && budgetStr.isNotEmpty
+        ? (double.tryParse(budgetStr) ?? 0)
+        : null;
+
+    setState(() {
+      _loading = true;
+      _error = null;
+      _routes = null;
+    });
+
+    try {
+      final reachable = await ApiService.checkBackendReachable();
+      if (!mounted) return;
+      if (!reachable) {
         setState(() {
-          _markerStatus = 'missing inputs';
+          _loading = false;
+          _error =
+              'Cannot reach backend at ${apiBaseUrl}. Start backend: cd backend/server && uvicorn main:app --reload --host 0.0.0.0 --port 5001';
         });
         return;
       }
-      final routes = await ApiService.searchRoutes(from: from, to: to);
-      if (routes.isEmpty) {
-        setState(() {
-          _markerStatus = 'no routes';
-        });
-        return;
-      }
-      final first = routes.first as Map<String, dynamic>;
-      final segments = (first['segments'] ?? []) as List<dynamic>;
-      if (segments.isEmpty) {
-        setState(() {
-          _markerStatus = 'no segments';
-        });
-        return;
-      }
-      final start = segments.first['start_point'];
-      final end = segments.last['end_point'];
-      if (start == null || end == null) {
-        setState(() {
-          _markerStatus = 'missing points';
-        });
-        return;
-      }
-      final origin = LatLng(
-        (start['lat'] as num).toDouble(),
-        (start['lng'] as num).toDouble(),
-      );
-      final dest = LatLng(
-        (end['lat'] as num).toDouble(),
-        (end['lng'] as num).toDouble(),
+
+      final routes = await ApiService.searchRoutes(
+        from: from,
+        to: to,
+        budget: budget,
+        preference: preference,
       );
       if (!mounted) return;
       setState(() {
-        _originPoint = origin;
-        _destPoint = dest;
-        _markerStatus = 'loaded';
-        _markerInfo =
-            'Markers: (${origin.latitude.toStringAsFixed(4)}, ${origin.longitude.toStringAsFixed(4)}) → (${dest.latitude.toStringAsFixed(4)}, ${dest.longitude.toStringAsFixed(4)})';
+        _routes = routes;
+        _loading = false;
+        _selectedRouteIndex = 0;
       });
-      _mapController.move(origin, _mapController.camera.zoom);
+      _fitMapToRoute();
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _markerError = e.toString();
-        _markerStatus = 'error';
+        _error = e.toString().replaceFirst('Exception: ', '');
+        _loading = false;
       });
     }
+  }
+
+  void _fitMapToRoute() {
+    final route = _selectedRoute;
+    if (route == null) return;
+    final points = <LatLng>[];
+    for (final seg in route.segments) {
+      points.add(LatLng(seg.startPoint.lat, seg.startPoint.lng));
+      points.add(LatLng(seg.endPoint.lat, seg.endPoint.lng));
+      if (seg.polyline.isNotEmpty) {
+        points.addAll(decodePolylineToLatLng(seg.polyline));
+      }
+    }
+    if (points.isEmpty) return;
+    final bounds = LatLngBounds.fromPoints(points);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _mapController.fitCamera(
+        CameraFit.bounds(
+          bounds: bounds,
+          padding: const EdgeInsets.all(24),
+        ),
+      );
+    });
+  }
+
+  TripOption? get _selectedRoute {
+    if (_routes == null || _routes!.isEmpty) return null;
+    final i = _selectedRouteIndex.clamp(0, _routes!.length - 1);
+    return _routes![i];
+  }
+
+  int get _cheapestIndex {
+    if (_routes == null || _routes!.isEmpty) return 0;
+    double best = _routes!.first.totalCost;
+    int idx = 0;
+    for (int i = 1; i < _routes!.length; i++) {
+      if (_routes![i].totalCost < best) {
+        best = _routes![i].totalCost;
+        idx = i;
+      }
+    }
+    return idx;
+  }
+
+  int get _fastestIndex {
+    if (_routes == null || _routes!.isEmpty) return 0;
+    int best = _routes!.first.totalDurationMinutes;
+    int idx = 0;
+    for (int i = 1; i < _routes!.length; i++) {
+      if (_routes![i].totalDurationMinutes < best) {
+        best = _routes![i].totalDurationMinutes;
+        idx = i;
+      }
+    }
+    return idx;
+  }
+
+  List<TripOption> get _sortedRoutes {
+    if (_routes == null) return [];
+    final routes = List<TripOption>.from(_routes!);
+    if (sortBy == 'price') {
+      routes.sort((a, b) => a.totalCost.compareTo(b.totalCost));
+    } else if (sortBy == 'time') {
+      routes.sort((a, b) => a.totalDurationMinutes.compareTo(b.totalDurationMinutes));
+    }
+    return routes;
   }
 
   @override
   Widget build(BuildContext context) {
-    final data =
-        ModalRoute.of(context)!.settings.arguments as Map<String, String>;
+    final data = ModalRoute.of(context)?.settings.arguments as Map<String, String>? ?? {};
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -223,7 +280,63 @@ class _ResultsScreenState extends State<ResultsScreen> {
                 ),
               ),
 
-              // Sort/Filter Bar
+              if (_loading)
+                const Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(color: Colors.white),
+                        SizedBox(height: 16),
+                        Text(
+                          'Finding routes...',
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'This can take 1–2 minutes for the first search.',
+                          style: TextStyle(color: Colors.white70, fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else if (_error != null)
+                Expanded(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.error_outline, size: 48, color: Colors.white70),
+                          const SizedBox(height: 16),
+                          Text(
+                            _error!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.white, fontSize: 16),
+                          ),
+                          const SizedBox(height: 24),
+                          TextButton.icon(
+                            onPressed: _loadRoutes,
+                            icon: const Icon(Icons.refresh, color: Colors.white),
+                            label: const Text('Retry', style: TextStyle(color: Colors.white)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              else if (_routes == null || _routes!.isEmpty)
+                const Expanded(
+                  child: Center(
+                    child: Text(
+                      'No routes found.',
+                      style: TextStyle(color: Colors.white, fontSize: 18),
+                    ),
+                  ),
+                )
+              else ...[
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
@@ -281,174 +394,259 @@ class _ResultsScreenState extends State<ResultsScreen> {
               ),
 
               const SizedBox(height: 16),
-              // Row with Routes on left and Map on right
               Expanded(
-              child: Row(
-                children: [
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 15),
+                        itemCount: _sortedRoutes.length,
+                        itemBuilder: (context, index) {
+                          final option = _sortedRoutes[index];
+                          final originalIndex = _routes!.indexOf(option);
+                          final isSelected = originalIndex == _selectedRouteIndex;
+                          final bestIndex = 0;
+                          final cheapestIndex = _cheapestIndex;
+                          final fastestIndex = _fastestIndex;
 
-                  // Left: Recommended routes
-                  Expanded(
-                    flex: 2,
-                    child: ListView(
-                      padding: const EdgeInsets.symmetric(horizontal: 15),
-                      children: const [
-                        ModernRouteCard(
-                          badge: 'Best Overall',
-                          badgeColor: Colors.green,
-                          title: 'Best Balance',
-                          routeDetails: 'Train → Flight',
-                          price: 180,
-                          time: '4h 45m',
-                          transfers: 1,
-                          emissions: 'Low',
-                          isRecommended: true,
-                        ),
-                        ModernRouteCard(
-                          badge: 'Fastest',
-                          badgeColor: Colors.orange,
-                          title: 'Fastest Route',
-                          routeDetails: 'Direct Flight',
-                          price: 280,
-                          time: '2h 10m',
-                          transfers: 0,
-                          emissions: 'Medium',
-                          isRecommended: false,
-                        ),
-                        ModernRouteCard(
-                          badge: 'Cheapest',
-                          badgeColor: Colors.blue,
-                          title: 'Cheapest Route',
-                          routeDetails: 'Bus → Flight → Train',
-                          price: 120,
-                          time: '7h 30m',
-                          transfers: 2,
-                          emissions: 'Low',
-                          isRecommended: false,
-                        ),
-                        ModernRouteCard(
-                          badge: 'Eco-friendly',
-                          badgeColor: Colors.green,
-                          title: 'Eco-friendly Route',
-                          routeDetails: 'Train → Bus',
-                          price: 95,
-                          time: '8h 15m',
-                          transfers: 1,
-                          emissions: 'Very Low',
-                          isRecommended: false,
-                        ),
-                      ],
-                    ),
-                  ),
+                          String badge;
+                          Color badgeColor;
+                          if (originalIndex == bestIndex) {
+                            badge = 'Best Overall';
+                            badgeColor = Colors.green;
+                          } else if (originalIndex == fastestIndex) {
+                            badge = 'Fastest';
+                            badgeColor = Colors.orange;
+                          } else if (originalIndex == cheapestIndex) {
+                            badge = 'Cheapest';
+                            badgeColor = Colors.blue;
+                          } else {
+                            badge = 'Option ${originalIndex + 1}';
+                            badgeColor = Colors.grey;
+                          }
 
-                  const SizedBox(width: 16), // space between routes and map
-
-                  // Right: Map
-                  Expanded(
-                    flex: 3,
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 16, right: 30),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                        border: Border.all(color: Colors.grey[300]!),
-                      ),
-                      clipBehavior: Clip.hardEdge,
-                      child: Stack( 
-                        children: [
-                          FlutterMap(
-                            mapController: _mapController, 
-                            options: MapOptions(
-                              initialCenter: _originPoint ?? LatLng(37.7749, -122.4194),
-                              initialZoom: 5,
-                            ),
-                            children: [
-                              TileLayer(
-                                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                userAgentPackageName: 'com.example.findosa',
-                              ),
-                              if (_originPoint != null && _destPoint != null)
-                                MarkerLayer(
-                                  markers: [
-                                    Marker(
-                                      point: _originPoint!,
-                                      width: 40,
-                                      height: 40,
-                                      child: const Icon(Icons.location_on, color: Colors.red, size: 40),
-                                    ),
-                                    Marker(
-                                      point: _destPoint!,
-                                      width: 40,
-                                      height: 40,
-                                      child: const Icon(Icons.location_on, color: Colors.blue, size: 40),
-                                    ),
-                                  ],
-                                ),
-                            ],
-                          ),
-                          if (_markerError != null)
-                            Positioned(
-                              left: 12,
-                              bottom: 12,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.9),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  'Map markers unavailable: $_markerError',
-                                  style: TextStyle(color: Colors.red[700], fontSize: 12),
-                                ),
-                              ),
-                            ),
-                          Positioned(
-                            left: 12,
-                            top: 12,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                'Marker status: $_markerStatus',
-                                style: const TextStyle(color: Colors.black87, fontSize: 12),
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            right: 12,
-                            bottom: 12,
-                            child: Column(
-                              children: [
-                                _buildZoomButton(Icons.add, () {
-                                  _mapController.move(_mapController.camera.center, _mapController.camera.zoom + 1);
-                                }),
-                                const SizedBox(height: 8),
-                                _buildZoomButton(Icons.remove, () {
-                                  _mapController.move(_mapController.camera.center, _mapController.camera.zoom - 1);
-                                }),
-                              ],
-                            ),
-                          ),
-                        ],
+                          return ModernRouteCard(
+                            badge: badge,
+                            badgeColor: badgeColor,
+                            title: option.routeSummary,
+                            routeDetails: option.routeSummary,
+                            price: option.totalCost.round(),
+                            time: option.durationFormatted,
+                            transfers: option.segments.length > 1 ? option.segments.length - 1 : 0,
+                            emissions: option.emissionsFormatted,
+                            isRecommended: originalIndex == bestIndex,
+                            isSelected: isSelected,
+                            onTap: () {
+                              setState(() {
+                                _selectedRouteIndex = originalIndex >= 0 ? originalIndex : index;
+                              });
+                              _fitMapToRoute();
+                            },
+                            onViewDetails: () => _showRouteDetails(option),
+                          );
+                        },
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 3,
+                      child: _buildMapContent(),
+                    ),
+                  ],
+                ),
               ),
-              ),
+              ],
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildMapContent() {
+    final route = _selectedRoute;
+    final initialCenter = route != null && route.segments.isNotEmpty
+        ? LatLng(route.segments.first.startPoint.lat, route.segments.first.startPoint.lng)
+        : const LatLng(37.7749, -122.4194);
+    final markers = <Marker>[];
+    final polylines = <Polyline>[];
+
+    if (route != null && route.segments.isNotEmpty) {
+      final first = route.segments.first;
+      final last = route.segments.last;
+      markers.add(
+        Marker(
+          point: LatLng(first.startPoint.lat, first.startPoint.lng),
+          width: 40,
+          height: 40,
+          child: const Icon(Icons.location_on, color: Color(0xFF4A90E2), size: 40),
+        ),
+      );
+      markers.add(
+        Marker(
+          point: LatLng(last.endPoint.lat, last.endPoint.lng),
+          width: 40,
+          height: 40,
+          child: const Icon(Icons.location_on, color: Color(0xFF7B68EE), size: 40),
+        ),
+      );
+      for (final seg in route.segments) {
+        if (seg.polyline.isNotEmpty) {
+          final points = decodePolylineToLatLng(seg.polyline);
+          if (points.isNotEmpty) {
+            polylines.add(
+              Polyline(
+                points: points,
+                strokeWidth: 5,
+                color: const Color(0xFF4A90E2),
+              ),
+            );
+          }
+        }
+      }
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16, right: 30),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      clipBehavior: Clip.hardEdge,
+      child: Stack(
+        children: [
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: initialCenter,
+              initialZoom: 8,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.example.super_dosa_search',
+              ),
+              if (polylines.isNotEmpty)
+                PolylineLayer(polylines: polylines),
+              MarkerLayer(markers: markers),
+            ],
+          ),
+          Positioned(
+            right: 12,
+            bottom: 12,
+            child: Column(
+              children: [
+                _buildZoomButton(Icons.add, () {
+                  _mapController.move(_mapController.camera.center, _mapController.camera.zoom + 1);
+                }),
+                const SizedBox(height: 8),
+                _buildZoomButton(Icons.remove, () {
+                  _mapController.move(_mapController.camera.center, _mapController.camera.zoom - 1);
+                }),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRouteDetails(TripOption option) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.6,
+          maxChildSize: 0.9,
+          minChildSize: 0.4,
+          builder: (context, scrollController) {
+            return Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Route Details',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        option.durationFormatted,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '\$${option.totalCost.toStringAsFixed(0)} · ${option.segments.length - 1 > 0 ? '${option.segments.length - 1} transfers' : 'Direct'}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: scrollController,
+                      itemCount: option.segments.length,
+                      itemBuilder: (context, index) {
+                        final seg = option.segments[index];
+                        final isFlight = seg.mode == 'FLY';
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: isFlight ? Colors.blue.withOpacity(0.1) : Colors.purple.withOpacity(0.1),
+                              child: Icon(
+                                isFlight ? Icons.flight : Icons.directions_car,
+                                color: isFlight ? Colors.blue : Colors.purple,
+                              ),
+                            ),
+                            title: Text(seg.details),
+                            subtitle: Text(
+                              '${(seg.distanceMiles).toStringAsFixed(0)} miles · ${(seg.durationMinutes / 60).floor()}h ${seg.durationMinutes % 60}m',
+                            ),
+                            trailing: Text(
+                              '\$${seg.costUsd.toStringAsFixed(0)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -546,6 +744,9 @@ class ModernRouteCard extends StatelessWidget {
   final int transfers;
   final String emissions;
   final bool isRecommended;
+  final bool isSelected;
+  final VoidCallback? onTap;
+  final VoidCallback? onViewDetails;
 
   const ModernRouteCard({
     super.key,
@@ -558,6 +759,9 @@ class ModernRouteCard extends StatelessWidget {
     required this.transfers,
     required this.emissions,
     required this.isRecommended,
+    this.isSelected = false,
+    this.onTap,
+    this.onViewDetails,
   });
 
   @override
@@ -567,14 +771,12 @@ class ModernRouteCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: isRecommended
+        side: (isRecommended || isSelected)
             ? BorderSide(color: badgeColor, width: 2)
             : BorderSide.none,
       ),
       child: InkWell(
-        onTap: () {
-          // Navigate to route details or show bottom sheet
-        },
+        onTap: onTap,
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -733,9 +935,7 @@ class ModernRouteCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Show route details
-                  },
+                  onPressed: onViewDetails,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,

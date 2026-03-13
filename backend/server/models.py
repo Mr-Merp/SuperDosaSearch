@@ -16,12 +16,10 @@ class GeoPoint(BaseModel):
 
 class UserProfile(BaseModel):
     user_id: str
-    # rn set as some arbitrary default
-    # this is how we will track user preferences for cost vs time tradeoffs
     dollar_value_per_hour: float = 25.0 
-    
-    # we will get this from an api key, set arbitrarily for now
     car_mpg: float = 25.0
+    budget_usd: Optional[float] = None
+    preference: Optional[str] = None
 
 class TripSegment(BaseModel):
     mode: TravelMode
@@ -38,9 +36,9 @@ class TripSegment(BaseModel):
 class TripOption(BaseModel):
     route_id: str
     
-    # changed to a basic cost to duration cost exchange
     total_cost: float
     total_duration_minutes: int 
+    total_emissions_kg: float = 0.0
     
     segments: List[TripSegment]
     
