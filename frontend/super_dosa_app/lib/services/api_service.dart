@@ -70,7 +70,7 @@ class ApiService {
           msg.contains('SocketException') ||
           msg.contains('Connection closed')) {
         throw Exception(
-            'Cannot reach backend at $baseUrl. ($msg) Start backend: cd backend/server && uvicorn main:app --reload --host 0.0.0.0 --port 5001');
+            'Cannot reach backend at $baseUrl. ($msg) Start backend: cd backend/server && uvicorn main:app --reload --host 0.0.0.0 --port 5000');
       }
       throw Exception('Error: $msg');
     }

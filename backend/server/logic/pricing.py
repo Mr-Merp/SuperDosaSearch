@@ -17,7 +17,6 @@ _KG_CO2_PER_FLIGHT_MILE = 0.2
 class PricingService:
     @staticmethod
     def get_gas_price_along_route(polyline: str, state_code: str | None = None):
-        # Use state average fuel price as a simple proxy.
         return PricingService.get_gas_price_for_state(state_code)
 
     @staticmethod
@@ -32,7 +31,6 @@ class PricingService:
             return 3.50
         try:
             client = OilPriceAPI(api_key)
-            # OilPriceAPI free tier provides diesel state averages; use as proxy.
             data = client.diesel_prices.get_regional(state=key)
             price = float(data.get("price", 3.50))
             _STATE_FUEL_CACHE[key] = price
@@ -56,12 +54,18 @@ class PricingService:
             dist = _haversine_miles(location.lat, location.lng, lat, lon)
             if dist <= radius_miles:
                 props = feat.get("properties") or {}
+                apt_type = props.get("type")
+                if apt_type not in {"large_airport", "medium_airport"}:
+                    continue
+                if props.get("scheduled_service") is not True:
+                    continue
                 results.append({
                     "iata_code": props.get("iata_code"),
                     "icao_code": props.get("icao_code"),
                     "name": props.get("name"),
                     "lat": lat,
                     "lng": lon,
+                    "type": props.get("type"),
                     "_dist": dist,
                 })
         results.sort(key=lambda x: x["_dist"])
@@ -74,9 +78,31 @@ class PricingService:
         return out
 
     @staticmethod
-    def get_flight_data(origin, dest):
-        # MOCK: In prod, call Skyscanner/Amadeus
-        return {"price": 250.0, "duration_minutes": 300}
+    def get_flight_data(
+        origin_code,
+        dest_code,
+        origin_lat,
+        origin_lng,
+        dest_lat,
+        dest_lng,
+        origin_type: str | None = None,
+        dest_type: str | None = None,
+    ):
+        distance_miles = _haversine_miles(origin_lat, origin_lng, dest_lat, dest_lng)
+        base_fare = 60.0
+        per_mile = 0.12
+        price = base_fare + (per_mile * distance_miles)
+        if origin_type == "large_airport" or dest_type == "large_airport":
+            price *= 1.45
+        elif origin_type == "medium_airport" or dest_type == "medium_airport":
+            price *= 1.30
+        price = max(80.0, min(price, 700.0))
+
+        avg_speed_mph = 500.0
+        flight_minutes = int((distance_miles / avg_speed_mph) * 60)
+        duration_minutes = max(45, flight_minutes + 60)
+
+        return {"price": round(price, 2), "duration_minutes": duration_minutes}
 
     @staticmethod
     def get_drive_emissions_kg(gallons: float) -> float:

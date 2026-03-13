@@ -50,7 +50,16 @@ class FlyingStrategy(TravelStrategy):
                 continue
             drive_to_apt = drive_to_apt_list[0]
             drive_to_dest = drive_to_dest_list[0]
-            flight = PricingService.get_flight_data(start_code, end_code)
+            flight = PricingService.get_flight_data(
+                start_code,
+                end_code,
+                start_apt["lat"],
+                start_apt["lng"],
+                end_apt["lat"],
+                end_apt["lng"],
+                start_apt.get("type"),
+                end_apt.get("type"),
+            )
 
             seg_1 = TripSegment(
                 mode=TravelMode.DRIVE,
