@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
+  static bool avoidFlightsPreference = false;
+
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
@@ -10,7 +12,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
 
   double costVsSpeed = 0.5;
-  bool avoidFlights = false;
+  bool avoidFlights = SettingsScreen.avoidFlightsPreference;
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onChanged: (value) {
                 setState(() {
                   avoidFlights = value;
+                  SettingsScreen.avoidFlightsPreference = value;
                 });
               },
             ),

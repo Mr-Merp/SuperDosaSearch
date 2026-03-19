@@ -1,6 +1,6 @@
 import asyncio
 from typing import List
-from models import RouteRequest, TripOption
+from models import RouteRequest, TripOption, TravelMode
 from logic.strategies.driving import DrivingStrategy
 from logic.strategies.flying import FlyingStrategy
 from logic.ranking import RankingEngine
@@ -18,6 +18,13 @@ class RouteOrchestrator:
 
         all_candidates = [opt for sublist in results for opt in sublist]
         original_candidates = list(all_candidates)
+        preference = (request.user_profile.preference or "").lower()
+
+        if preference == "avoid_flights":
+            all_candidates = [
+                opt for opt in all_candidates
+                if all(seg.mode != TravelMode.FLY for seg in opt.segments)
+            ]
 
         budget = request.user_profile.budget_usd
         if budget is not None:

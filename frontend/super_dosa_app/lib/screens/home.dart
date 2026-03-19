@@ -13,6 +13,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final toController = TextEditingController();
   final budgetController = TextEditingController();
   String selectedPreference = 'balanced';
+  bool avoidFlights = false;
 
   void _swapLocations() {
     final temp = fromController.text;
@@ -27,14 +28,6 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined, color: Colors.white),
-            onPressed: () {
-              Navigator.pushNamed(context, '/settings');
-            },
-          ),
-        ],
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -275,6 +268,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                   'Balanced', 'balanced', Icons.balance),
                               _buildPreferenceChip(
                                   'Eco-friendly', 'eco', Icons.eco),
+                              _buildPreferenceChip(
+                                  'Fewest Transfers',
+                                  'fewest_transfers',
+                                  Icons.alt_route),
+                              _buildPreferenceChip(
+                                  'Less Driving',
+                                  'less_driving',
+                                  Icons.directions_car),
+                              _buildToggleChip(
+                                  'Avoid Flights',
+                                  Icons.do_not_disturb_alt),
                             ],
                           ),
 
@@ -302,6 +306,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             child: ElevatedButton(
                               onPressed: () {
+                                final effectivePreference =
+                                    avoidFlights
+                                        ? 'avoid_flights'
+                                        : selectedPreference;
                                 Navigator.pushNamed(
                                   context,
                                   '/results',
@@ -309,7 +317,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     'from': fromController.text,
                                     'to': toController.text,
                                     'budget': budgetController.text,
-                                    'preference': selectedPreference,
+                                    'preference': effectivePreference,
                                   },
                                 );
                               },
@@ -380,6 +388,39 @@ class _HomeScreenState extends State<HomeScreen> {
       side: BorderSide(
         color: isSelected ? Color(0xFF4A90E2) : Colors.grey[300]!,
         width: isSelected ? 2 : 1,
+      ),
+    );
+  }
+
+  Widget _buildToggleChip(String label, IconData icon) {
+    return FilterChip(
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 16,
+            color: avoidFlights ? Colors.white : const Color(0xFFD64545),
+          ),
+          const SizedBox(width: 4),
+          Text(label),
+        ],
+      ),
+      selected: avoidFlights,
+      onSelected: (selected) {
+        setState(() {
+          avoidFlights = selected;
+        });
+      },
+      selectedColor: const Color(0xFFD64545),
+      checkmarkColor: Colors.white,
+      labelStyle: TextStyle(
+        color: avoidFlights ? Colors.white : const Color(0xFFD64545),
+        fontWeight: avoidFlights ? FontWeight.w600 : FontWeight.normal,
+      ),
+      side: BorderSide(
+        color: avoidFlights ? const Color(0xFFD64545) : Colors.grey[300]!,
+        width: avoidFlights ? 2 : 1,
       ),
     );
   }

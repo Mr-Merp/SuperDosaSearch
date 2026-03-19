@@ -152,6 +152,49 @@ class _ResultsScreenState extends State<ResultsScreen> {
     return routes;
   }
 
+  Widget _buildRouteLocationField({
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.location_on, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final data = ModalRoute.of(context)?.settings.arguments as Map<String, String>? ?? {};
@@ -194,35 +237,34 @@ class _ResultsScreenState extends State<ResultsScreen> {
                       children: [
                         // Route Display
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.location_on, color: Color(0xFF4A90E2), size: 20),
-                            const SizedBox(width: 8),
                             Expanded(
-                              child: Text(
-                                data['from'] ?? 'Origin',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                textAlign: TextAlign.center,
-                                overflow: TextOverflow.ellipsis,
+                              child: _buildRouteLocationField(
+                                label: 'From',
+                                value: data['from'] ?? 'Origin',
+                                color: const Color(0xFF4A90E2),
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            Icon(Icons.arrow_forward, color: Colors.grey[400], size: 20),
-                            const SizedBox(width: 16),
-                            Icon(Icons.location_on, color: Color(0xFF7B68EE), size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                data['to'] ?? 'Destination',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
+                            const SizedBox(width: 12),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF4A90E2).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: IconButton(
+                                onPressed: null,
+                                icon: Icon(
+                                  Icons.swap_horiz,
+                                  color: const Color(0xFF4A90E2),
                                 ),
-                                textAlign: TextAlign.center,
-                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildRouteLocationField(
+                                label: 'To',
+                                value: data['to'] ?? 'Destination',
+                                color: const Color(0xFF7B68EE),
                               ),
                             ),
                           ],
@@ -693,12 +735,18 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
   IconData _getPreferenceIcon(String preference) {
     switch (preference) {
+      case 'avoid_flights':
+        return Icons.do_not_disturb_alt;
       case 'fastest':
         return Icons.speed;
       case 'cheapest':
         return Icons.attach_money;
       case 'eco':
         return Icons.eco;
+      case 'fewest_transfers':
+        return Icons.alt_route;
+      case 'less_driving':
+        return Icons.directions_car;
       default:
         return Icons.balance;
     }
@@ -706,12 +754,18 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
   String _getPreferenceLabel(String preference) {
     switch (preference) {
+      case 'avoid_flights':
+        return 'Avoid Flights';
       case 'fastest':
         return 'Fastest';
       case 'cheapest':
         return 'Cheapest';
       case 'eco':
         return 'Eco-friendly';
+      case 'fewest_transfers':
+        return 'Fewest Transfers';
+      case 'less_driving':
+        return 'Less Driving';
       default:
         return 'Balanced';
     }
