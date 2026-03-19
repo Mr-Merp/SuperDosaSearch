@@ -21,6 +21,7 @@ class UserProfile(BaseModel):
     budget_usd: Optional[float] = None
     preference: Optional[str] = None
     learned_weights: Optional[dict[str, float]] = None
+    include_ridehail_airport_leg: bool = False
 
 class TripSegment(BaseModel):
     mode: TravelMode

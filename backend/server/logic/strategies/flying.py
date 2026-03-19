@@ -60,6 +60,20 @@ class FlyingStrategy(TravelStrategy):
                 start_apt.get("type"),
                 end_apt.get("type"),
             )
+            use_ridehail_for_last_leg = req.user_profile.include_ridehail_airport_leg
+            last_leg_cost = (
+                PricingService.get_ridehail_estimate(
+                    drive_to_dest["distance_miles"],
+                    drive_to_dest["duration_minutes"],
+                )
+                if use_ridehail_for_last_leg
+                else (drive_to_dest["distance_miles"] / req.user_profile.car_mpg) * dest_gas
+            )
+            last_leg_details = (
+                "Uber/Taxi to Destination"
+                if use_ridehail_for_last_leg
+                else "Rental to Destination"
+            )
 
             seg_1 = TripSegment(
                 mode=TravelMode.DRIVE,
@@ -87,8 +101,8 @@ class FlyingStrategy(TravelStrategy):
                 end_point=req.destination,
                 duration_minutes=drive_to_dest["duration_minutes"],
                 distance_miles=drive_to_dest["distance_miles"],
-                cost_usd=(drive_to_dest["distance_miles"] / req.user_profile.car_mpg) * dest_gas,
-                details="Rental to Destination",
+                cost_usd=last_leg_cost,
+                details=last_leg_details,
                 polyline=drive_to_dest["polyline"],
             )
             total_cost = seg_1.cost_usd + seg_2.cost_usd + seg_3.cost_usd

@@ -50,6 +50,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
     final to = data['to'] ?? '';
     final budgetStr = data['budget'];
     final preference = data['preference'];
+    final includeRidehailAirportLeg =
+        (data['includeRidehailAirportLeg'] ?? 'false').toLowerCase() == 'true';
     final budget = budgetStr != null && budgetStr.isNotEmpty
         ? (double.tryParse(budgetStr) ?? 0)
         : null;
@@ -77,6 +79,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
         to: to,
         budget: budget,
         preference: preference,
+        includeRidehailAirportLeg: includeRidehailAirportLeg,
       );
       if (!mounted) return;
       setState(() {

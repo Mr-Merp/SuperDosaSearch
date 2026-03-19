@@ -117,6 +117,13 @@ class PricingService:
         miles = _haversine_miles(origin.lat, origin.lng, dest.lat, dest.lng)
         return miles * _KG_CO2_PER_FLIGHT_MILE
 
+    @staticmethod
+    def get_ridehail_estimate(distance_miles: float, duration_minutes: int) -> float:
+        base_fare = 3.0
+        per_mile = 2.25
+        per_minute = 0.35
+        return round(base_fare + (distance_miles * per_mile) + (duration_minutes * per_minute), 2)
+
 
 def _haversine_miles(lat1, lon1, lat2, lon2):
     r = 3958.8
