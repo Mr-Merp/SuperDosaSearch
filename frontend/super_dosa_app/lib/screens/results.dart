@@ -491,13 +491,18 @@ class _ResultsScreenState extends State<ResultsScreen> {
                             isRecommended: originalIndex == bestIndex,
                             isSelected: isSelected,
                             ecoTheme: preference == 'eco',
-                            onTap: () {
+                            onTap: () async {
                               setState(() {
                                 _selectedRouteIndex = originalIndex >= 0 ? originalIndex : index;
                               });
                               _fitMapToRoute();
+                              await ApiService.selectRoute(routeId: option.routeId);
                             },
-                            onViewDetails: () => _showRouteDetails(option),
+                            onViewDetails: () async {
+                              await ApiService.selectRoute(routeId: option.routeId);
+                              if (!mounted) return;
+                              _showRouteDetails(option);
+                            },
                           );
                         },
                       ),

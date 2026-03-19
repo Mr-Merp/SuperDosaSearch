@@ -7,6 +7,8 @@ import 'api_config.dart';
 class ApiService {
   static const Duration timeout = Duration(seconds: 120);
   static const Duration healthCheckTimeout = Duration(seconds: 5);
+  static final String _userId =
+      'user-${DateTime.now().millisecondsSinceEpoch.toString()}';
 
   static Future<bool> checkBackendReachable() async {
     final baseUrl = apiBaseUrl;
@@ -31,6 +33,7 @@ class ApiService {
       final body = <String, dynamic>{
         'from_address': from,
         'to_address': to,
+        'user_id': _userId,
       };
       if (budget != null) {
         body['budget'] = budget;
@@ -73,6 +76,26 @@ class ApiService {
             'Cannot reach backend at $baseUrl. ($msg) Start backend: cd backend/server && uvicorn main:app --reload --host 0.0.0.0 --port 5000');
       }
       throw Exception('Error: $msg');
+    }
+  }
+
+  static Future<void> selectRoute({
+    required String routeId,
+  }) async {
+    final baseUrl = apiBaseUrl;
+    try {
+      await http
+          .post(
+            Uri.parse('$baseUrl/routes/select'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'user_id': _userId,
+              'route_id': routeId,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+    } catch (_) {
+      // Ignore personalization feedback failures.
     }
   }
 }

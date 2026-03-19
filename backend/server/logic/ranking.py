@@ -19,6 +19,9 @@ class RankingEngine:
         return (value - minimum) / (maximum - minimum)
 
     def _weights_for_preference(self, preference: str) -> dict[str, float]:
+        if self.profile.learned_weights:
+            return dict(self.profile.learned_weights)
+
         weights = {
             "cost": 0.35,
             "time": 0.30,

@@ -20,6 +20,7 @@ class UserProfile(BaseModel):
     car_mpg: float = 25.0
     budget_usd: Optional[float] = None
     preference: Optional[str] = None
+    learned_weights: Optional[dict[str, float]] = None
 
 class TripSegment(BaseModel):
     mode: TravelMode
@@ -50,3 +51,8 @@ class RouteRequest(BaseModel):
     origin: GeoPoint
     destination: GeoPoint
     user_profile: UserProfile
+
+
+class RouteSelectionFeedback(BaseModel):
+    user_id: str
+    route_id: str
