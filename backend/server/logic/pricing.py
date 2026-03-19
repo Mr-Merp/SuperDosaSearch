@@ -12,7 +12,6 @@ except Exception:
 NEARBY_AIRPORT_RADIUS_METERS = 64374
 _STATE_FUEL_CACHE = {}
 _KG_CO2_PER_GALLON_GASOLINE = 8.89
-_KG_CO2_PER_FLIGHT_MILE = 0.2
 
 class PricingService:
     @staticmethod
@@ -115,7 +114,23 @@ class PricingService:
     @staticmethod
     def get_flight_emissions_kg(origin: GeoPoint, dest: GeoPoint) -> float:
         miles = _haversine_miles(origin.lat, origin.lng, dest.lat, dest.lng)
-        return miles * _KG_CO2_PER_FLIGHT_MILE
+        # Short flights are less efficient because takeoff and climb dominate.
+        if miles <= 300:
+            per_mile_kg = 0.29
+            fixed_kg = 38.0
+        elif miles <= 1000:
+            per_mile_kg = 0.22
+            fixed_kg = 48.0
+        elif miles <= 2500:
+            per_mile_kg = 0.18
+            fixed_kg = 58.0
+        else:
+            per_mile_kg = 0.16
+            fixed_kg = 72.0
+
+        # Simple CO2e uplift to account for non-CO2 high-altitude effects.
+        radiative_forcing_multiplier = 1.15
+        return (fixed_kg + (miles * per_mile_kg)) * radiative_forcing_multiplier
 
     @staticmethod
     def get_ridehail_estimate(distance_miles: float, duration_minutes: int) -> float:
