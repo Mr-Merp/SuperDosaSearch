@@ -13,6 +13,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final toController = TextEditingController();
   final budgetController = TextEditingController();
   String selectedPreference = 'balanced';
+  bool includeRidehailAirportLeg = false;
 
   void _swapLocations() {
     final temp = fromController.text;
@@ -278,6 +279,19 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                           ),
 
+                          const SizedBox(height: 16),
+
+                          SwitchListTile.adaptive(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text('Include Uber/Taxi from airport'),
+                            value: includeRidehailAirportLeg,
+                            onChanged: (value) {
+                              setState(() {
+                                includeRidehailAirportLeg = value;
+                              });
+                            },
+                          ),
+
                           const SizedBox(height: 32),
 
                           // Search Button
@@ -310,6 +324,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                     'to': toController.text,
                                     'budget': budgetController.text,
                                     'preference': selectedPreference,
+                                    'includeRidehailAirportLeg':
+                                        includeRidehailAirportLeg.toString(),
                                   },
                                 );
                               },

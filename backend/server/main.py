@@ -28,6 +28,7 @@ class SearchRequest(BaseModel):
     to_address: str
     budget: float | None = None
     preference: str | None = None
+    include_ridehail_airport_leg: bool = False
 
 @app.post("/routes/search", response_model=List[TripOption])
 async def search_routes(request: SearchRequest):
@@ -43,6 +44,7 @@ async def search_routes(request: SearchRequest):
             user_id="default",
             budget_usd=request.budget,
             preference=request.preference,
+            include_ridehail_airport_leg=request.include_ridehail_airport_leg,
         ),
     )
 

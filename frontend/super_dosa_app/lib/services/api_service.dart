@@ -25,6 +25,7 @@ class ApiService {
     required String to,
     double? budget,
     String? preference,
+    bool includeRidehailAirportLeg = false,
   }) async {
     final baseUrl = apiBaseUrl;
     try {
@@ -37,6 +38,9 @@ class ApiService {
       }
       if (preference != null && preference.isNotEmpty) {
         body['preference'] = preference;
+      }
+      if (includeRidehailAirportLeg) {
+        body['include_ridehail_airport_leg'] = true;
       }
 
       final response = await http

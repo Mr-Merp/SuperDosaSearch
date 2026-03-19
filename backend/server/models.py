@@ -20,6 +20,7 @@ class UserProfile(BaseModel):
     car_mpg: float = 25.0
     budget_usd: Optional[float] = None
     preference: Optional[str] = None
+    include_ridehail_airport_leg: bool = False
 
 class TripSegment(BaseModel):
     mode: TravelMode
