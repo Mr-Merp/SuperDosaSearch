@@ -23,6 +23,14 @@ class _ResultsScreenState extends State<ResultsScreen> {
   String? _error;
   int _selectedRouteIndex = 0;
 
+  Color _primaryAccent(String preference) => preference == 'eco'
+      ? const Color(0xFF2F9E44)
+      : const Color(0xFF4A90E2);
+
+  Color _secondaryAccent(String preference) => preference == 'eco'
+      ? const Color(0xFF74B816)
+      : const Color(0xFF7B68EE);
+
   @override
   void initState() {
     super.initState();
@@ -198,6 +206,9 @@ class _ResultsScreenState extends State<ResultsScreen> {
   @override
   Widget build(BuildContext context) {
     final data = ModalRoute.of(context)?.settings.arguments as Map<String, String>? ?? {};
+    final preference = data['preference'] ?? '';
+    final primaryAccent = _primaryAccent(preference);
+    final secondaryAccent = _secondaryAccent(preference);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -215,8 +226,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF4A90E2), // Blue
-              Color(0xFF7B68EE), // Purple
+              primaryAccent,
+              secondaryAccent,
             ],
           ),
         ),
@@ -242,20 +253,20 @@ class _ResultsScreenState extends State<ResultsScreen> {
                               child: _buildRouteLocationField(
                                 label: 'From',
                                 value: data['from'] ?? 'Origin',
-                                color: const Color(0xFF4A90E2),
+                                color: primaryAccent,
                               ),
                             ),
                             const SizedBox(width: 12),
                             Container(
                               decoration: BoxDecoration(
-                                color: const Color(0xFF4A90E2).withOpacity(0.1),
+                                color: primaryAccent.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: IconButton(
                                 onPressed: null,
                                 icon: Icon(
                                   Icons.swap_horiz,
-                                  color: const Color(0xFF4A90E2),
+                                  color: primaryAccent,
                                 ),
                               ),
                             ),
@@ -264,7 +275,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                               child: _buildRouteLocationField(
                                 label: 'To',
                                 value: data['to'] ?? 'Destination',
-                                color: const Color(0xFF7B68EE),
+                                color: secondaryAccent,
                               ),
                             ),
                           ],
@@ -291,7 +302,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: Color(0xFF4A90E2).withOpacity(0.1),
+                                  color: primaryAccent.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Row(
@@ -300,7 +311,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                                     Icon(
                                       _getPreferenceIcon(data['preference']!),
                                       size: 16,
-                                      color: Color(0xFF4A90E2),
+                                      color: primaryAccent,
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
@@ -308,7 +319,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
-                                        color: Color(0xFF4A90E2),
+                                        color: primaryAccent,
                                       ),
                                     ),
                                   ],
@@ -384,15 +395,15 @@ class _ResultsScreenState extends State<ResultsScreen> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: _buildSortChip('Recommended', 'recommended', Icons.star),
+                    child: _buildSortChip('Recommended', 'recommended', Icons.star, primaryAccent),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: _buildSortChip('Price', 'price', Icons.attach_money),
+                    child: _buildSortChip('Price', 'price', Icons.attach_money, primaryAccent),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: _buildSortChip('Time', 'time', Icons.access_time),
+                    child: _buildSortChip('Time', 'time', Icons.access_time, primaryAccent),
                     ),
                   ],
                 ),
@@ -479,6 +490,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                             emissions: option.emissionsFormatted,
                             isRecommended: originalIndex == bestIndex,
                             isSelected: isSelected,
+                            ecoTheme: preference == 'eco',
                             onTap: () {
                               setState(() {
                                 _selectedRouteIndex = originalIndex >= 0 ? originalIndex : index;
@@ -508,6 +520,11 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
   Widget _buildMapContent() {
     final route = _selectedRoute;
+    final data =
+        ModalRoute.of(context)?.settings.arguments as Map<String, String>? ?? {};
+    final preference = data['preference'] ?? '';
+    final primaryAccent = _primaryAccent(preference);
+    final secondaryAccent = _secondaryAccent(preference);
     final initialCenter = route != null && route.segments.isNotEmpty
         ? LatLng(route.segments.first.startPoint.lat, route.segments.first.startPoint.lng)
         : const LatLng(37.7749, -122.4194);
@@ -522,7 +539,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
           point: LatLng(first.startPoint.lat, first.startPoint.lng),
           width: 40,
           height: 40,
-          child: const Icon(Icons.location_on, color: Color(0xFF4A90E2), size: 40),
+          child: Icon(Icons.location_on, color: primaryAccent, size: 40),
         ),
       );
       markers.add(
@@ -530,7 +547,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
           point: LatLng(last.endPoint.lat, last.endPoint.lng),
           width: 40,
           height: 40,
-          child: const Icon(Icons.location_on, color: Color(0xFF7B68EE), size: 40),
+          child: Icon(Icons.location_on, color: secondaryAccent, size: 40),
         ),
       );
       for (final seg in route.segments) {
@@ -541,7 +558,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
               Polyline(
                 points: points,
                 strokeWidth: 5,
-                color: const Color(0xFF4A90E2),
+                color: primaryAccent,
               ),
             );
           }
@@ -587,16 +604,16 @@ class _ResultsScreenState extends State<ResultsScreen> {
             bottom: 12,
             child: Column(
               children: [
-                _buildZoomButton(Icons.add, () {
-                  _mapController.move(_mapController.camera.center, _mapController.camera.zoom + 1);
-                }),
-                const SizedBox(height: 8),
-                _buildZoomButton(Icons.remove, () {
-                  _mapController.move(_mapController.camera.center, _mapController.camera.zoom - 1);
-                }),
-              ],
-            ),
-          ),
+                                _buildZoomButton(Icons.add, () {
+                                  _mapController.move(_mapController.camera.center, _mapController.camera.zoom + 1);
+                                }, primaryAccent),
+                                const SizedBox(height: 8),
+                                _buildZoomButton(Icons.remove, () {
+                                  _mapController.move(_mapController.camera.center, _mapController.camera.zoom - 1);
+                                }, primaryAccent),
+                              ],
+                            ),
+                          ),
         ],
       ),
     );
@@ -692,7 +709,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
     );
   }
 
-  Widget _buildSortChip(String label, String value, IconData icon) {
+  Widget _buildSortChip(String label, String value, IconData icon, Color accentColor) {
     final isSelected = sortBy == value;
     return GestureDetector(
       onTap: () {
@@ -716,7 +733,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
             Icon(
               icon,
               size: 16,
-              color: isSelected ? Color(0xFF4A90E2) : Colors.white,
+              color: isSelected ? accentColor : Colors.white,
             ),
             const SizedBox(width: 6),
             Text(
@@ -724,7 +741,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? Color(0xFF4A90E2) : Colors.white,
+                color: isSelected ? accentColor : Colors.white,
               ),
             ),
           ],
@@ -771,7 +788,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
     }
   }
 
-  Widget _buildZoomButton(IconData icon, VoidCallback onPressed) {
+  Widget _buildZoomButton(IconData icon, VoidCallback onPressed, Color accentColor) {
       return SizedBox(
         height: 40,
         width: 40,
@@ -781,7 +798,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
           backgroundColor: Colors.white.withOpacity(0.9),
           elevation: 2,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          child: Icon(icon, color: const Color(0xFF4A90E2), size: 20),
+          child: Icon(icon, color: accentColor, size: 20),
         ),
       );
     }
@@ -799,6 +816,7 @@ class ModernRouteCard extends StatelessWidget {
   final String emissions;
   final bool isRecommended;
   final bool isSelected;
+  final bool ecoTheme;
   final VoidCallback? onTap;
   final VoidCallback? onViewDetails;
 
@@ -814,6 +832,7 @@ class ModernRouteCard extends StatelessWidget {
     required this.emissions,
     required this.isRecommended,
     this.isSelected = false,
+    this.ecoTheme = false,
     this.onTap,
     this.onViewDetails,
   });
@@ -921,10 +940,12 @@ class ModernRouteCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         '\$$price',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF4A90E2),
+                          color: ecoTheme
+                              ? const Color(0xFF2F9E44)
+                              : const Color(0xFF4A90E2),
                         ),
                       ),
                     ],
@@ -982,8 +1003,12 @@ class ModernRouteCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Color(0xFF4A90E2),
-                      Color(0xFF7B68EE),
+                      ecoTheme
+                          ? const Color(0xFF2F9E44)
+                          : const Color(0xFF4A90E2),
+                      ecoTheme
+                          ? const Color(0xFF74B816)
+                          : const Color(0xFF7B68EE),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(12),

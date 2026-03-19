@@ -15,6 +15,14 @@ class _HomeScreenState extends State<HomeScreen> {
   String selectedPreference = 'balanced';
   bool avoidFlights = false;
 
+  Color get _primaryAccent => selectedPreference == 'eco'
+      ? const Color(0xFF2F9E44)
+      : const Color(0xFF4A90E2);
+
+  Color get _secondaryAccent => selectedPreference == 'eco'
+      ? const Color(0xFF74B816)
+      : const Color(0xFF7B68EE);
+
   void _swapLocations() {
     final temp = fromController.text;
     fromController.text = toController.text;
@@ -35,8 +43,8 @@ class _HomeScreenState extends State<HomeScreen> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF4A90E2), // Blue
-              Color(0xFF7B68EE), // Purple
+              _primaryAccent,
+              _secondaryAccent,
             ],
           ),
         ),
@@ -123,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                     prefixIcon: Icon(
                                       Icons.location_on,
-                                      color: Color(0xFF4A90E2),
+                                      color: _primaryAccent,
                                     ),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
@@ -138,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide(
-                                        color: Color(0xFF4A90E2),
+                                        color: _primaryAccent,
                                         width: 2,
                                       ),
                                     ),
@@ -150,12 +158,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               const SizedBox(width: 8),
                               Container(
                                 decoration: BoxDecoration(
-                                  color: Color(0xFF4A90E2).withOpacity(0.1),
+                                  color: _primaryAccent.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: IconButton(
                                   icon: const Icon(Icons.swap_horiz),
-                                  color: Color(0xFF4A90E2),
+                                  color: _primaryAccent,
                                   onPressed: _swapLocations,
                                   tooltip: 'Swap locations',
                                 ),
@@ -173,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                     prefixIcon: Icon(
                                       Icons.location_on,
-                                      color: Color(0xFF7B68EE),
+                                      color: _secondaryAccent,
                                     ),
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
@@ -188,7 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide(
-                                        color: Color(0xFF7B68EE),
+                                        color: _secondaryAccent,
                                         width: 2,
                                       ),
                                     ),
@@ -291,14 +299,14 @@ class _HomeScreenState extends State<HomeScreen> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  Color(0xFF4A90E2),
-                                  Color(0xFF7B68EE),
+                                  _primaryAccent,
+                                  _secondaryAccent,
                                 ],
                               ),
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Color(0xFF4A90E2).withOpacity(0.3),
+                                  color: _primaryAccent.withOpacity(0.3),
                                   blurRadius: 12,
                                   offset: Offset(0, 6),
                                 ),
@@ -368,7 +376,7 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon,
-              size: 16, color: isSelected ? Colors.white : Color(0xFF4A90E2)),
+              size: 16, color: isSelected ? Colors.white : _primaryAccent),
           const SizedBox(width: 4),
           Text(label),
         ],
@@ -379,14 +387,14 @@ class _HomeScreenState extends State<HomeScreen> {
           selectedPreference = value;
         });
       },
-      selectedColor: Color(0xFF4A90E2),
+      selectedColor: _primaryAccent,
       checkmarkColor: Colors.white,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Color(0xFF4A90E2),
+        color: isSelected ? Colors.white : _primaryAccent,
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
       ),
       side: BorderSide(
-        color: isSelected ? Color(0xFF4A90E2) : Colors.grey[300]!,
+        color: isSelected ? _primaryAccent : Colors.grey[300]!,
         width: isSelected ? 2 : 1,
       ),
     );
